@@ -1,11 +1,9 @@
 (ns kpar.core
   (:import (java.lang IllegalArgumentException)
-           (java.util.concurrent CompletableFuture FutureTask Callable
-                                 Executors)
+           (java.util.concurrent CompletableFuture FutureTask Executors)
            (java.util.function Supplier Function)))
 
-;; (def ^:dynamic *executor*)
-(def ^:dynamic executor (Executors/newWorkStealingPool))
+(defonce executor (Executors/newWorkStealingPool))
 
 (def par-val {:type :v})
 (def par-fut {:type :f})
@@ -17,27 +15,14 @@
 ;; TODO: spawn creates a new task that fulfills the future
 ;; Needs to be a macro, no evaluation as `fun` is the un-evaluated function
 ;; FutureTask receives a function that is already a callable
-(defn spawn-refactored [fun]
+(defn spawn [fun]
   (let [fut (FutureTask.
              #(CompletableFuture/supplyAsync
                (reify Supplier
-                 (get [_] (println fun) 3))))]       
+                 (get [_] (println fun) 3))))]
     (.execute executor fut)))
 
-(spawn-refactored 42)
- 
-(defn spawn [fun]
-  (let [fut (FutureTask.
-             (reify Callable
-               (call [_]
-                 (CompletableFuture/supplyAsync
-                  (reify Supplier
-                    (get [_] (println fun) 3))))))]
-   (.execute executor fut)))
-
 (spawn 42)
-
-;;(CompletableFuture/supplyAsync v)
 
 (defn liftv
   "Lifts a value to a Parallel collection. e.g.
@@ -47,6 +32,7 @@
    From this point on, you have to interact with it via combinators"
   [val]
   (assoc par-val :value val))
+
 
 ;; Lifts a future into the Par structure
 (defmulti liftf :type)
@@ -66,22 +52,10 @@
   [ps fun]
   map fun ps)
 
-;; (-> (CompletableFuture.)
-;;     (.supplyAsync (reify Supplier (get [_] (println 3)))))
 
-;; (defn setup []
-;;   (set! *executor* (Executors/newWorkStealingPool)))
-   
+;; TODO: working example of the thenApplyAsync for future chaining
 (-> (CompletableFuture/supplyAsync (reify Supplier (get [t] (println t) 3)))
     (.thenApplyAsync (reify Function
                        (apply [_ t] (println (+ t 1)) 5)
                        ))
     (.get))
-
-
-;; Example of creating a future function, which reifies the Callable
-;; and pass it to the work stealing pool of threads
-(let [x 22
-      f (FutureTask. (reify Callable (call [_] (println x))))
-      e (Executors/newWorkStealingPool)]
-  (.execute e f))
