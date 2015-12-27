@@ -44,22 +44,35 @@
     (throw (IllegalArgumentException. "Value needs to be of future type"))))
 
 (defn |
-  "Par combinator: aggregates the parallel collections into a list"
+  "par combinator: aggregates the parallel collections into a list"
   [& pars] pars)
 
-(defn >>
-  "Sequence combinator: similar to map but act on a parallel collection"
-  [ps fun]
-  (map (fn [p] (.thenApplyAsync (:value p)
-                                (reify Function
-                                  (apply [_ t]
-                                    (assoc p :value (fun t))))))
-       ps))
+(defn ^:private reify-sequence
+  [p fun]
+  (reify Function
+    (apply [_ t]
+      (fun t))))
 
+(defn >>
+  "sequence combinator: similar to map but act on a parallel collection"
+  [ps fun]
+  (map #(assoc % :value (.thenApplyAsync (:value %) (reify-sequence % fun))) ps))
+
+(defn extract
+  "extract combinator: gets the values from the parallel collection.
+   this operation blocks the current working thread"
+  [p]
+  (map #(.get (:value %)) p))
+
+
+;; Working example
 (let [f (spawn (+ 3 2))
       v 43
       p (| (liftf f) (liftv v))]
-  (>> p #(+ 1 %)))
+  (-> (>> p #(+ 1 %))
+      (>> #(+ 1 %))
+      (>> #(* 3 %))
+      extract))
 
 
 ;; TODO: working example of the thenApplyAsync for future chaining
