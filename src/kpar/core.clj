@@ -5,51 +5,61 @@
 
 (defonce executor (Executors/newWorkStealingPool))
 
-(def par-val {:type :v})
-(def par-fut {:type :f})
-(def par-par {:type :p})
-(def par-join {:type :j})
-(def par-futpar {:type :fp})
-(def par-array {:type :m})
+(def par-default {:value nil})
+(def par-val (merge {:type :v} par-default))
+(def par-fut (merge {:type :f} par-default))
+(def par-par (merge {:type :p} par-default))
+(def par-join (merge {:type :j} par-default))
+(def par-futpar (merge {:type :fp} par-default))
+(def par-array (merge {:type :m} par-default))
 
-;; TODO: spawn creates a new task that fulfills the future
-;; FutureTask receives a function that is already a callable
-(defmacro spawn [fun]
-  `(let [fut# (CompletableFuture/supplyAsync
-                 (reify Supplier
-                   (get [_] ~fun)))]
-     (.execute executor (fn [] fut#))
-     fut#))
-;; (macroexpand '(spawn (+ 2 3)))
-
+(defmacro spawn
+  "creates a new future that runs the computation asynchronously"
+  [fun]
+  `(CompletableFuture/supplyAsync
+    (reify Supplier
+      (get [_] ~fun))
+    executor))
 
 (defn liftv
-  "Lifts a value to a Parallel collection. e.g.
+  "lifts a value to a parallel collection, e.g.
 
      liftv 42 -> Par 42
 
-   From this point on, you have to interact with it via combinators"
+   from this point on, you have to interact with it via combinators"
   [val]
-  (assoc par-val :value val))
+  (assoc par-val :value (CompletableFuture/completedFuture val)))
 
+(defn liftf
+  "lifts a future into a parallel collection, e.g.
 
-;; Lifts a future into the Par structure
-(defmulti liftf :type)
-(defmethod liftf :f [fut] (assoc par-fut :value fut))
-(defmethod liftf :fp [fut] (assoc par-futpar :value fut))
-(defmethod liftf :default [fut]
-  (throw (IllegalArgumentException. "Value needs to be of future type")))
+     liftf (spawn (long-running-expression))
+
+   only spawned expressions can be lifted into a parallel collection"
+  [fut]
+  (if (future? fut)
+    (if (instance? CompletableFuture fut)
+      (assoc par-fut :value fut)
+      (throw (IllegalArgumentException. "Unexpected future created with method distinct from 'spawn'")))
+    (throw (IllegalArgumentException. "Value needs to be of future type"))))
 
 (defn |
   "Par combinator: aggregates the parallel collections into a list"
   [& pars] pars)
 
-;; This implementation needs to wrap the fun function into a function
-;; that extracts the content and passes the value to the function
 (defn >>
   "Sequence combinator: similar to map but act on a parallel collection"
   [ps fun]
-  map fun ps)
+  (map (fn [p] (.thenApplyAsync (:value p)
+                                (reify Function
+                                  (apply [_ t]
+                                    (assoc p :value (fun t))))))
+       ps))
+
+(let [f (spawn (+ 3 2))
+      v 43
+      p (| (liftf f) (liftv v))]
+  (>> p #(+ 1 %)))
 
 
 ;; TODO: working example of the thenApplyAsync for future chaining
