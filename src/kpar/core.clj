@@ -13,16 +13,15 @@
 (def par-array {:type :m})
 
 ;; TODO: spawn creates a new task that fulfills the future
-;; Needs to be a macro, no evaluation as `fun` is the un-evaluated function
 ;; FutureTask receives a function that is already a callable
-(defn spawn [fun]
-  (let [fut (FutureTask.
-             #(CompletableFuture/supplyAsync
-               (reify Supplier
-                 (get [_] (println fun) 3))))]
-    (.execute executor fut)))
+(defmacro spawn [fun]
+  `(let [fut# (CompletableFuture/supplyAsync
+                 (reify Supplier
+                   (get [_] ~fun)))]
+     (.execute executor (fn [] fut#))
+     fut#))
+;; (macroexpand '(spawn (+ 2 3)))
 
-(spawn 42)
 
 (defn liftv
   "Lifts a value to a Parallel collection. e.g.
@@ -54,8 +53,8 @@
 
 
 ;; TODO: working example of the thenApplyAsync for future chaining
-(-> (CompletableFuture/supplyAsync (reify Supplier (get [t] (println t) 3)))
-    (.thenApplyAsync (reify Function
-                       (apply [_ t] (println (+ t 1)) 5)
-                       ))
-    (.get))
+;; (-> (CompletableFuture/supplyAsync (reify Supplier (get [t] (println t) 3)))
+;;     (.thenApplyAsync (reify Function
+;;                        (apply [_ t] (println (+ t 1)) 5)
+;;                        ))
+;;     (.get))
