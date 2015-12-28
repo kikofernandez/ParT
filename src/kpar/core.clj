@@ -1,24 +1,18 @@
 (ns kpar.core
+  (:require [kpar.data :as data])
   (:import (java.lang IllegalArgumentException)
-           (java.util.concurrent CompletableFuture FutureTask Executors)
+           (java.util.concurrent CompletableFuture Executors)
            (java.util.function Supplier Function)))
 
-(defonce executor (Executors/newWorkStealingPool))
-
-(def par-default {:value nil})
-(def par-val (merge {:type :v} par-default))
-(def par-fut (merge {:type :f} par-default))
-(def par-par (merge {:type :p} par-default))
-(def par-join (merge {:type :j} par-default))
-(def par-futpar (merge {:type :fp} par-default))
-(def par-array (merge {:type :m} par-default))
+(def ^:once executor
+  (Executors/newWorkStealingPool))
 
 (defmacro spawn
   "creates a new future that runs the computation asynchronously"
-  [fun]
+  [& fun]
   `(CompletableFuture/supplyAsync
     (reify Supplier
-      (get [_] ~fun))
+      (get [_] ~@fun))
     executor))
 
 (defn liftv
@@ -27,8 +21,8 @@
      liftv 42 -> Par 42
 
    from this point on, you have to interact with it via combinators"
-  [val]
-  (assoc par-val :value (CompletableFuture/completedFuture val)))
+  [v]
+  (data/create-kdf data/par-val v))
 
 (defn liftf
   "lifts a future into a parallel collection, e.g.
@@ -39,7 +33,7 @@
   [fut]
   (if (future? fut)
     (if (instance? CompletableFuture fut)
-      (assoc par-fut :value fut)
+      (data/create-kd data/par-fut fut)
       (throw (IllegalArgumentException. "Unexpected future created with method distinct from 'spawn'")))
     (throw (IllegalArgumentException. "Value needs to be of future type"))))
 
@@ -62,17 +56,17 @@
   "extract combinator: gets the values from the parallel collection.
    this operation blocks the current working thread"
   [p]
-  (map #(.get (:value %)) p))
+  (map data/extractvalue-kd p))
 
 
 ;; Working example
-(let [f (spawn (+ 3 2))
-      v 43
-      p (| (liftf f) (liftv v))]
-  (-> (>> p #(+ 1 %))
-      (>> #(+ 1 %))
-      (>> #(* 3 %))
-      extract))
+;; (let [f (spawn (+ 3 2))
+;;       v 43
+;;       p (| (liftf f) (liftv v))]
+;;   (-> (>> p #(+ 1 %))
+;;       (>> #(+ 1 %))
+;;       (>> #(* 3 %))
+;;       extract))
 
 
 ;; TODO: working example of the thenApplyAsync for future chaining
