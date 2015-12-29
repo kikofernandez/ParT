@@ -2,7 +2,7 @@
   (:require [kpar.data :as data])
   (:import (java.lang IllegalArgumentException)
            (java.util.concurrent CompletableFuture Executors)
-           (java.util.function Supplier Function)))
+           (java.util.function Supplier)))
 
 (def ^:once executor
   (Executors/newWorkStealingPool))
@@ -41,37 +41,13 @@
   "par combinator: aggregates the parallel collections into a list"
   [& pars] pars)
 
-(defn ^:private reify-sequence
-  [p fun]
-  (reify Function
-    (apply [_ t]
-      (fun t))))
-
 (defn >>
   "sequence combinator: similar to map but act on a parallel collection"
   [ps fun]
-  (map #(assoc % :value (.thenApplyAsync (:value %) (reify-sequence % fun))) ps))
+  (map #(data/setvalue-kd % fun) ps))
 
 (defn extract
   "extract combinator: gets the values from the parallel collection.
    this operation blocks the current working thread"
   [p]
   (map data/extractvalue-kd p))
-
-
-;; Working example
-;; (let [f (spawn (+ 3 2))
-;;       v 43
-;;       p (| (liftf f) (liftv v))]
-;;   (-> (>> p #(+ 1 %))
-;;       (>> #(+ 1 %))
-;;       (>> #(* 3 %))
-;;       extract))
-
-
-;; TODO: working example of the thenApplyAsync for future chaining
-;; (-> (CompletableFuture/supplyAsync (reify Supplier (get [t] (println t) 3)))
-;;     (.thenApplyAsync (reify Function
-;;                        (apply [_ t] (println (+ t 1)) 5)
-;;                        ))
-;;     (.get))
