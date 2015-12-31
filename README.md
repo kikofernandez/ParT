@@ -1,14 +1,19 @@
 # kpar
 
-A Clojure library designed to ... well, that part is up to you.
+A Clojure collection designed to create pipeline parallelism based on the
+[Encore Parallel combinators](http://link.springer.com/chapter/10.1007%2F978-3-319-18941-3_1)
+paper.
 
 ## Usage
 
-FIXME
+TODO: Examples
+
+## Limitations
+
+- Java 8 required
 
 ## License
 
-Copyright © 2015 FIXME
+Copyright © 2015 Kiko Fernandez Reyes
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Distributed under the MIT License.
