@@ -39,7 +39,8 @@
 
 (defn |
   "par combinator: aggregates the parallel collections into a list"
-  [& pars] pars)
+  [& pars]
+  (reduce #(data/create-kd data/par-par % %2) data/par-empty pars))
 
 (defn >>
   "sequence combinator: similar to map but act on a parallel collection"
@@ -50,4 +51,4 @@
   "extract combinator: gets the values from the parallel collection.
    this operation blocks the current working thread"
   [p]
-  (map data/extractvalue-kd p))
+  (data/extractvalue-kd p))
