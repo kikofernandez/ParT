@@ -28,16 +28,14 @@
         crisis (| mid-30-crisis mid-50-crisis)]
     (is (every? expected (extract crisis)))))
 
-
 (deftest test->>
   (let [p (| (liftv (inc 42))
              (liftf (spawn (inc 11))))
-        p1 (>> p #(inc %))
+        p1 (>> p inc)
         p2 (>> p1 inc)
-        expected1 '(44 13)
-        expected2 (map inc '(44 13))]
+        expected1 '(44 13)]
     (is (= (extract p1) expected1))
-    (is (= (extract p2) expected2))))
+    (is (= (extract p2) (map inc expected1)))))
 
 (deftest test-extract
     (let [p (| (liftv (inc 42))

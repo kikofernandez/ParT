@@ -44,8 +44,8 @@
 
 (defn >>
   "sequence combinator: similar to map but act on a parallel collection"
-  [ps fun]
-  (map #(data/setvalue-kd % fun) ps))
+  [p fun]
+  (data/setvalue-kd p fun))
 
 (defn extract
   "extract combinator: gets the values from the parallel collection.

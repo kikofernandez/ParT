@@ -37,9 +37,17 @@
         s (reify-sequence p fun)]
     (.thenApplyAsync v s)))
 
-(defn setvalue-kd
+(defn setvalue-kdv
   [p fun]
   (assoc p :value (continuation p fun)))
+
+(defmulti setvalue-kd :type)
+(defmethod setvalue-kd :s [p fun] p)
+(defmethod setvalue-kd :v [p fun] (setvalue-kdv p fun))
+(defmethod setvalue-kd :f [p fun] (setvalue-kdv p fun))
+(defmethod setvalue-kd :p [p fun] (create-kd par-par
+                                             (setvalue-kd (:left p) fun)
+                                             (setvalue-kd (:right p) fun)))
 
 (defn ^:private extractvalue-kdv
   "internal function for getting a value. blocks the main thread"
