@@ -1,4 +1,4 @@
-image: java:openjdk-8u66-jre
+#image: java:openjdk-8u66-jre
 
 before_script:
   - apt-get update -y
