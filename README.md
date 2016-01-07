@@ -1,4 +1,5 @@
 # KPar
+[![Build Status](https://travis-ci.org/kikofernandez/kpar.svg?branch=master)](https://travis-ci.org/kikofernandez/kpar)
 
 UNFINISHED WORK
 
