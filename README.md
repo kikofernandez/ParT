@@ -1,5 +1,7 @@
 # KPar
 
+UNFINISHED WORK
+
 Kpar is a parallel collection designed to create pipeline parallelism
 (based on the [Encore Parallel combinators](http://link.springer.com/chapter/10.1007%2F978-3-319-18941-3_1)
 paper).
