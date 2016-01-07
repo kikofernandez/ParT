@@ -2,20 +2,24 @@
   (:import (java.util.concurrent CompletableFuture)
            (java.util.function Function)))
 
-(def ^:private par-default {:value nil})
-(def par-empty (merge {:type :s} par-default))
-(def par-val (merge {:type :v} par-default))
-(def par-fut (merge {:type :f} par-default))
-(def par-par {:type :p, :left nil, :right nil})
-(def par-join (merge {:type :j} par-default))
-(def par-futpar (merge {:type :fp} par-default))
-(def par-array (merge {:type :m} par-default))
+(defrecord ParT [type value dependents])
+
+
+(def ^:private par-default (->ParT nil nil []))
+(def par-empty (assoc par-default :type :s))
+(def par-val (assoc par-default :type :v))
+(def par-fut (assoc par-default :type :f))
+(def par-par (assoc par-default :type :p, :value {:left nil, :right nil}))
+(def par-join (assoc par-default :type :j))
+(def par-futpar (assoc par-default :type :fp))
+(def par-array (assoc par-default :type :m))
 
 (defn create-kd
   [p v & vs]
+  {:pre [(< (count vs) 2)]}
   (if (empty? vs)
     (assoc p :value v)
-    (assoc p :left v :right (first vs))))
+    (assoc p :value {:left v :right (first vs)})))
 
 (defn create-kdf
   [p v]
@@ -39,15 +43,16 @@
 
 (defn setvalue-kdv
   [p fun]
-  (assoc p :value (continuation p fun)))
+  (assoc p :value (continuation p fun) :dependents [(getvalue-kd p)]))
 
 (defmulti setvalue-kd :type)
 (defmethod setvalue-kd :s [p fun] p)
 (defmethod setvalue-kd :v [p fun] (setvalue-kdv p fun))
 (defmethod setvalue-kd :f [p fun] (setvalue-kdv p fun))
-(defmethod setvalue-kd :p [p fun] (create-kd par-par
-                                             (setvalue-kd (:left p) fun)
-                                             (setvalue-kd (:right p) fun)))
+(defmethod setvalue-kd :p [p fun]
+  (create-kd par-par
+             (setvalue-kd (get-in p [:value :left]) fun)
+             (setvalue-kd (get-in p [:value :right]) fun)))
 
 (defn ^:private extractvalue-kdv
   "internal function for getting a value. blocks the main thread"
@@ -59,8 +64,8 @@
 (defmethod extractvalue-kd :s [_] nil)
 (defmethod extractvalue-kd :v [p] [(extractvalue-kdv p)])
 (defmethod extractvalue-kd :f [p] [(extractvalue-kdv p)])
-(defmethod extractvalue-kd :p [p] (concat (extractvalue-kd (:left p))
-                                          (extractvalue-kd (:right p))))
+(defmethod extractvalue-kd :p [p] (concat (extractvalue-kd (get-in p [:value :left]))
+                                          (extractvalue-kd (get-in p [:value :right]))))
 
 (defn gettype-kd
   [p]
