@@ -1,9 +1,10 @@
-# KPar
+# ParT
 [![Build Status](https://travis-ci.org/kikofernandez/kpar.svg?branch=master)](https://travis-ci.org/kikofernandez/kpar)
 
-UNFINISHED WORK
+UNFINISHED WORK, PROTOTYPE
 
-Kpar is a parallel collection designed to create pipeline parallelism
+ParT is a parallel collection designed to create complex workflows including but not
+limited to pipeline and speculative parallelism
 (based on the [Encore Parallel combinators](http://link.springer.com/chapter/10.1007%2F978-3-319-18941-3_1)
 paper).
  
