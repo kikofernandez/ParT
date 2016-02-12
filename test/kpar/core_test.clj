@@ -1,7 +1,7 @@
 (ns kpar.core-test
   (:require [clojure.test :refer :all]
             [kpar.core :refer :all]
-            [kpar.data :refer :all])
+            [kpar.data :as data])
   (:import (java.util.concurrent CompletableFuture)))
 
 (deftest test-spawn
@@ -13,13 +13,13 @@
 
 (deftest test-liftv
   (let [p (liftv 42)]
-    (is (= (gettype-kd p) :v))
-    (is future? (getvalue-kd p))))
+    (is (= (data/gettype p) :v))
+    (is future? (data/value p))))
 
 (deftest test-liftf
   (let [p (liftf (spawn (inc 41)))]
-    (is (= (gettype-kd p) :f))
-    (is future? (getvalue-kd p))))
+    (is (= (data/gettype p) :f))
+    (is future? (data/value p))))
 
 (deftest test-|
   (let [expected #{35 33 57 56}

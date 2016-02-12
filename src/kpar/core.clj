@@ -22,7 +22,7 @@
 
    from this point on, you have to interact with it via combinators"
   [v]
-  (data/create-kdf data/par-val v))
+  (data/create-f data/party-val v))
 
 (defn liftf
   "lifts a future into a parallel collection, e.g.
@@ -33,22 +33,23 @@
   [fut]
   (if (future? fut)
     (if (instance? CompletableFuture fut)
-      (data/create-kd data/par-fut fut)
+      (data/create data/party-fut fut)
       (throw (IllegalArgumentException. "Unexpected future created with method distinct from 'spawn'")))
     (throw (IllegalArgumentException. "Value needs to be of future type"))))
 
 (defn |
   "par combinator: aggregates the parallel collections into a list"
   [& pars]
-  (reduce #(data/create-kd data/par-par % %2) data/par-empty pars))
+  {:pre [(> (count pars) 1)]}
+  (reduce #(data/create data/party-par % %2) pars))
 
 (defn >>
   "sequence combinator: similar to map but act on a parallel collection"
   [p fun]
-  (data/setvalue-kd p fun))
+  (data/update-party p fun))
 
 (defn extract
   "extract combinator: gets the values from the parallel collection.
    this operation blocks the current working thread"
   [p]
-  (data/extractvalue-kd p))
+  (data/extract p))

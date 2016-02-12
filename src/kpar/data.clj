@@ -4,28 +4,29 @@
 
 (defrecord ParT [type value dependents])
 
+(def ^:private party-default (->ParT nil nil []))
+(def party-empty (assoc party-default :type :s))
+(def party-val (assoc party-default :type :v))
+(def party-fut (assoc party-default :type :f))
+(def party-par (assoc party-default :type :p, :value {:left nil, :right nil}))
+(def party-join (assoc party-default :type :j))
+(def party-futpar (assoc party-default :type :fp))
+(def party-array (assoc party-default :type :m))
 
-(def ^:private par-default (->ParT nil nil []))
-(def par-empty (assoc par-default :type :s))
-(def par-val (assoc par-default :type :v))
-(def par-fut (assoc par-default :type :f))
-(def par-par (assoc par-default :type :p, :value {:left nil, :right nil}))
-(def par-join (assoc par-default :type :j))
-(def par-futpar (assoc par-default :type :fp))
-(def par-array (assoc par-default :type :m))
+(def gettype :type)
 
-(defn create-kd
+(defn create
   [p v & vs]
   {:pre [(< (count vs) 2)]}
   (if (empty? vs)
     (assoc p :value v)
     (assoc p :value {:left v :right (first vs)})))
 
-(defn create-kdf
+(defn create-f
   [p v]
-  (create-kd p (CompletableFuture/completedFuture v)))
+  (create p (CompletableFuture/completedFuture v)))
 
-(defn getvalue-kd
+(defn value
   [p]
   (get p :value nil))
 
@@ -37,36 +38,31 @@
 
 (defn ^:private continuation
   [p fun]
-  (let [v (getvalue-kd p)
+  (let [v (value p)
         s (reify-sequence p fun)]
     (.thenApplyAsync v s)))
 
-(defn setvalue-kdv
+(defn update-party-v
   [p fun]
-  (assoc p :value (continuation p fun) :dependents [(getvalue-kd p)]))
+  (assoc p :value (continuation p fun) :dependents [(value p)]))
 
-(defmulti setvalue-kd :type)
-(defmethod setvalue-kd :s [p fun] p)
-(defmethod setvalue-kd :v [p fun] (setvalue-kdv p fun))
-(defmethod setvalue-kd :f [p fun] (setvalue-kdv p fun))
-(defmethod setvalue-kd :p [p fun]
-  (create-kd par-par
-             (setvalue-kd (get-in p [:value :left]) fun)
-             (setvalue-kd (get-in p [:value :right]) fun)))
+(defmulti update-party :type)
+(defmethod update-party :s [p fun] p)
+(defmethod update-party :v [p fun] (update-party-v p fun))
+(defmethod update-party :f [p fun] (update-party-v p fun))
+(defmethod update-party :p [p fun]
+  (create party-par
+          (update-party (get-in p [:value :left]) fun)
+          (update-party (get-in p [:value :right]) fun)))
 
-(defn ^:private extractvalue-kdv
+(defn ^:private extract-v
   "internal function for getting a value. blocks the main thread"
   [v]
-  (some-> (getvalue-kd v)
-          .get))
+  (some-> (value v) .get))
 
-(defmulti extractvalue-kd :type)
-(defmethod extractvalue-kd :s [_] nil)
-(defmethod extractvalue-kd :v [p] [(extractvalue-kdv p)])
-(defmethod extractvalue-kd :f [p] [(extractvalue-kdv p)])
-(defmethod extractvalue-kd :p [p] (concat (extractvalue-kd (get-in p [:value :left]))
-                                          (extractvalue-kd (get-in p [:value :right]))))
-
-(defn gettype-kd
-  [p]
-  (:type p))
+(defmulti extract :type)
+(defmethod extract :s [_] nil)
+(defmethod extract :v [p] [(extract-v p)])
+(defmethod extract :f [p] [(extract-v p)])
+(defmethod extract :p [p] (concat (extract (get-in p [:value :left]))
+                                  (extract (get-in p [:value :right]))))
