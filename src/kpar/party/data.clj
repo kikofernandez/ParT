@@ -1,4 +1,4 @@
-(ns kpar.data
+(ns kpar.party.data
   (:import (java.util.concurrent CompletableFuture)
            (java.util.function Function)))
 

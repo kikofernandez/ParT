@@ -1,7 +1,7 @@
 (ns kpar.core-test
   (:require [clojure.test :refer :all]
             [kpar.core :refer :all]
-            [kpar.data :as data])
+            [kpar.party.data :as data])
   (:import (java.util.concurrent CompletableFuture)))
 
 (deftest test-spawn
@@ -21,15 +21,15 @@
     (is (= (data/gettype p) :f))
     (is future? (data/value p))))
 
-(deftest test-|
+(deftest test-||
   (let [expected #{35 33 57 56}
-        mid-30-crisis (| (liftf (spawn (inc 34))) (liftv (inc 32)))
-        mid-50-crisis (| (liftv (inc 56)) (liftf (spawn (inc 55)))) 
-        crisis (| mid-30-crisis mid-50-crisis)]
+        mid-30-crisis (|| (liftf (spawn (inc 34))) (liftv (inc 32)))
+        mid-50-crisis (|| (liftv (inc 56)) (liftf (spawn (inc 55)))) 
+        crisis (|| mid-30-crisis mid-50-crisis)]
     (is (every? expected (extract crisis)))))
 
 (deftest test->>
-  (let [p (| (liftv (inc 42))
+  (let [p (|| (liftv (inc 42))
              (liftf (spawn (inc 11))))
         p1 (>> p inc)
         p2 (>> p1 inc)
@@ -38,7 +38,7 @@
     (is (= (extract p2) (map inc expected1)))))
 
 (deftest test-extract
-    (let [p (| (liftv (inc 42))
+    (let [p (|| (liftv (inc 42))
                (liftf (spawn (inc 11))))
           p1 (>> p inc)
           p2 (>> p1 inc)
