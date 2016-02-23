@@ -8,4 +8,4 @@
   "Chooses an implementation from the list of implementations
   from sliding-window-gen."
   [fun-versions]
-  (first (first fun-versions)))
+  (ffirst fun-versions))

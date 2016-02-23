@@ -26,11 +26,11 @@
   [p v]
   (create p (CompletableFuture/completedFuture v)))
 
-(defn value
+(defn value ^CompletableFuture
   [p]
   (get p :value nil))
 
-(defn ^:private reify-sequence
+(defn ^:private reify-sequence ^Function
   [p fun]
   (reify Function
     (apply [_ t]
