@@ -5,6 +5,7 @@
             :url "https://opensource.org/licenses/MIT"}
   :global-vars {*warn-on-reflection* true}
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [org.clojure/tools.nrepl "0.2.12"]]
-  :profiles {:dev {:plugins [[cider/cider-nrepl "0.11.0-SNAPSHOT"]]}}
+                 [org.clojure/core.memoize "0.5.8"]]
+  :profiles {:dev {:plugins [[cider/cider-nrepl "0.11.0-SNAPSHOT"]]
+                   :dependencies [[org.clojure/tools.nrepl "0.2.12"]]}}
   )

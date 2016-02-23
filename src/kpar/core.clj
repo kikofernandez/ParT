@@ -1,12 +1,15 @@
 (ns kpar.core
   (:require [kpar.party.data :as data]
             [kpar.party.dispatch :as dsp]
-            [kpar.party.combinators :as c])
+            [kpar.party.combinators :as c]
+            [clojure.core.memoize :as m])
   (:import (java.lang IllegalArgumentException)
            (java.util.concurrent CompletableFuture Executors)
            (java.util.function Supplier)))
 
-(def ^:once executor (Executors/newWorkStealingPool))
+(defonce executor (Executors/newWorkStealingPool))
+(defonce ^:private window-size 2)
+(defonce ^:private cache-limit 64)
 
 (defmacro spawn
   "creates a new future that runs the computation asynchronously"
@@ -50,25 +53,31 @@
   [p]
   (data/extract p))
 
+;; todo: use the size variable to create customised sliding windows
 (defn ^:private sliding-window-gen
   "Sliding window generator, takes functions funs and return multiple
-  sliding windows to choose from. 
+  sliding windows to choose from.
   The returned format is as follows:
-  
+
   e.g. (sliding-window-gen inc dec inc')
   ([(comp inc dec inc')] [(comp inc) (comp dec inc')] [(comp inc dec) (comp inc')])
   "
-  [& funs]
+  [size & funs]
   (->> (map #(split-at % funs) (range 0 (count funs)))
        (map (fn [l] (if (empty? (first l)) [(second l)] l)))
        (map (fn [v] (mapv #(cons comp %) v)))))
+
+(def >>!
+  "memoize version of >> with a max. number of entries defined by cache-limit
+  and lru replacement policy"
+  (m/lru c/>> :lru/threshold cache-limit))
 
 (defmacro >>
   "Asynchronously execute the functions funs in each item of the ParT p.
 
   Returns a new ParT on which the functions will be executed asynchronously"
   [p & funs]
-  (let [fn-versioning (mapv #(with-meta % {:time 0.0}) (apply sliding-window-gen funs))]
+  (let [fn-versioning (mapv #(with-meta % {:time 0.0}) (apply sliding-window-gen window-size funs))]
     `(c/>> ~p (dsp/choose-implementation ~fn-versioning))))
 
 
