@@ -1,5 +1,5 @@
 # ParT
-[![Build Status](https://travis-ci.org/kikofernandez/kpar.svg?branch=master)](https://travis-ci.org/kikofernandez/kpar)
+[![Build Status](https://travis-ci.org/kikofernandez/ParT.svg?branch=master)](https://travis-ci.org/kikofernandez/ParT)
 
 __PROTOTYPE__
 
